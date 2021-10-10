@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using CSCore.CoreAudioAPI;
@@ -27,14 +28,40 @@ namespace Spotify_Controller
         [DllImport("user32.dll")]
         public static extern int SendMessage(IntPtr hWnd, int wMsg, IntPtr wParam, IntPtr lParam);
         static bool wePause = false;
+        static string configSkip = "";
         static float threshhold = 0.0f;
         private static Timer newTimer = new Timer(timerCallback, null, 0, 1000);
+
+        static string readConfig()
+        {
+            string configPath = Directory.GetCurrentDirectory() + "/config.cfg";
+            if (!File.Exists(configPath))
+                File.Create(configPath);
+
+            if (File.Exists(configPath))
+            {
+                string fileText = "";
+
+                try
+                {
+                    fileText = File.ReadAllText(configPath);
+                    return fileText;
+                } catch (Exception e)
+                {
+                    return e.Message;
+                }
+
+            }
+
+            return "";
+        }
 
         static void Main(string[] args)
         {
             Console.WriteLine("Initialized\nSelect A Percentage (1%-100%) to Auto-Mute at:");
             string str = Console.ReadLine();
             threshhold = float.Parse(str) / 100;
+            configSkip = readConfig();
 
             Console.ReadLine();
         }
@@ -60,7 +87,7 @@ namespace Spotify_Controller
                                 {
                                     int processID = process.Id;
 
-                                    if (process.ProcessName != "Spotify" && volume > threshhold)
+                                    if (process.ProcessName != "Spotify" && volume > threshhold && !configSkip.Contains(process.ProcessName))
                                         nonSpotifyAudio = true;
                                 }
                             }
